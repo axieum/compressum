@@ -22,9 +22,9 @@ public class ZipHandler implements IArchiveHandler
 
             for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
             {
-                ZipArchiveEntry entry = new ZipArchiveEntry(fileEntry.getValue());
+                ZipArchiveEntry entry = new ZipArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
                 entry.setSize(fileEntry.getKey().length());
-                
+
                 archive.putArchiveEntry(entry);
 
                 BufferedInputStream input = new BufferedInputStream(new FileInputStream(fileEntry.getKey()));

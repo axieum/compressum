@@ -9,11 +9,12 @@ import java.io.InvalidObjectException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public class Compressum
 {
     private HashMap<File, String> entries = new HashMap<>();
-    private Format[] formats;
+    private Format format;
     private File output;
 
     public Compressum()
@@ -21,15 +22,15 @@ public class Compressum
         //
     }
 
-    public Compressum(File output, Format... formats)
+    public Compressum(File output, Format format)
     {
         this.output = output;
-        this.formats = formats;
+        this.format = format;
     }
 
-    public Compressum(String output, Format... formats)
+    public Compressum(String output, Format format)
     {
-        this(new File(output), formats);
+        this(new File(output), format);
     }
 
     /**
@@ -39,20 +40,24 @@ public class Compressum
      */
     public CompletableFuture<File> compress() throws IOException
     {
-        // Validate the instance.
-        this.validate();
+        this.validate(); // Do have every necessary?
 
-        // Compress!
-        for (Format format : formats)
-        {
-            return CompletableFuture.supplyAsync(() -> {
-                if (!this.getOutput().exists())
-                    this.getOutput().getParentFile().mkdirs();
-                return format.getHandler().serialize(this);
-            });
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            // Prepare the directory for the archive.
+            if (!this.getOutput().exists())
+                this.getOutput().getParentFile().mkdirs();
 
-        return null; // If we reached here, it failed for some reason...
+            // Archive it!
+            File archive = format.getHandler().serialize(this);
+
+            // If the archive file is null or doesn't exist, throw an exception.
+            // NB: Throwing an exception allows for catching with #exceptionally()
+            if (archive == null || !archive.exists())
+                throw new CompletionException(new Exception("Compression of '" + getOutput().getPath() + "' failed!"));
+
+            // Return the archive.
+            return archive;
+        });
     }
 
     /**
@@ -64,9 +69,9 @@ public class Compressum
         return entries;
     }
 
-    public Format[] getFormats()
+    public Format getFormat()
     {
-        return formats;
+        return format;
     }
 
     /**
@@ -102,9 +107,9 @@ public class Compressum
         return addEntry(file, file.getName());
     }
 
-    public Compressum setFormat(Format... formats)
+    public Compressum setFormat(Format format)
     {
-        this.formats = formats;
+        this.format = format;
 
         return this;
     }
@@ -150,7 +155,7 @@ public class Compressum
     public boolean validate() throws IOException
     {
         // Did they supply us with a format?
-        if (formats == null || formats.length < 1)
+        if (format == null)
             throw new InvalidObjectException("Invalid format!");
 
         // Are there archive entries?

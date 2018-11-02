@@ -9,7 +9,9 @@ public enum Format
 {
     ZIP("zip", new ZipHandler()),
     SEVEN_ZIP("7z", new SevenZipHandler()),
-    TAR("tar", new TarHandler());
+    TAR("tar", new TarHandler()),
+    TAR_GZ("tar.gz", new TarHandler()),
+    TAR_XZ("tar.xz", new TarHandler());
 
     private final String extension;
     private final IArchiveHandler handler;

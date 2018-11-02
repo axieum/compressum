@@ -21,6 +21,7 @@ public class SevenZipHandler implements IArchiveHandler
             for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
             {
                 SevenZArchiveEntry entry = archive.createArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
+
                 archive.putArchiveEntry(entry);
 
                 InputStream stream = new FileInputStream(fileEntry.getKey());
