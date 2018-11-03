@@ -17,17 +17,32 @@ public class Compressum
     private Format format;
     private File output;
 
+    /**
+     * Create a new blank instance to be manually prepared.
+     */
     public Compressum()
     {
         //
     }
 
+    /**
+     * Create a new instance with the output and format specified.
+     *
+     * @param output output archive file
+     * @param format desired archive format
+     */
     public Compressum(File output, Format format)
     {
         this.output = output;
         this.format = format;
     }
 
+    /**
+     * Create a new instance with the output and format specified.
+     *
+     * @param output output archive pathname
+     * @param format desired archive format
+     */
     public Compressum(String output, Format format)
     {
         this(new File(output), format);
@@ -38,14 +53,21 @@ public class Compressum
      *
      * @return a "promise" revolving around the archive file instance
      */
-    public CompletableFuture<File> compress() throws IOException
+    public CompletableFuture<File> compress()
     {
-        this.validate(); // Do have every necessary?
-
         return CompletableFuture.supplyAsync(() -> {
+            // Check this instance to make sure we have everything.
+            if (format == null)
+                throw new CompletionException(new InvalidObjectException("Invalid format!"));
+            if (output == null)
+                throw new CompletionException(new InvalidObjectException("Invalid output!"));
+            if (output.isDirectory())
+                throw new CompletionException(new IOException("'" + output.getPath() + "' is not an output file!"));
+            if (output.exists())
+                throw new CompletionException(new FileAlreadyExistsException(output.getPath()));
+
             // Prepare the directory for the archive.
-            if (!this.getOutput().exists())
-                this.getOutput().getParentFile().mkdirs();
+            getOutput().getParentFile().mkdirs();
 
             // Archive it!
             File archive = format.getHandler().serialize(this);
@@ -61,17 +83,36 @@ public class Compressum
     }
 
     /**
-     * Getters & Setters.
+     * Retrieve all archive file entries.
+     *
+     * @return a map of Files and their pathname in the archive
      */
-
     public HashMap<File, String> getEntries()
     {
         return entries;
     }
 
+    /**
+     * Get the desired format of the archive.
+     *
+     * @return the format to be compressed into
+     */
     public Format getFormat()
     {
         return format;
+    }
+
+    /**
+     * Set the desired archive format.
+     *
+     * @param format Format to be compressed into
+     * @return this for chaining
+     */
+    public Compressum setFormat(Format format)
+    {
+        this.format = format;
+
+        return this;
     }
 
     /**
@@ -107,13 +148,11 @@ public class Compressum
         return addEntry(file, file.getName());
     }
 
-    public Compressum setFormat(Format format)
-    {
-        this.format = format;
-
-        return this;
-    }
-
+    /**
+     * Get an instance of a File for the output archive.
+     *
+     * @return the output archive file
+     */
     public File getOutput()
     {
         return output;
@@ -142,34 +181,5 @@ public class Compressum
     public Compressum setOutput(String output)
     {
         return setOutput(new File(output));
-    }
-
-    /**
-     * Validate this Compressum instance ready for execution.
-     *
-     * @return true if the instance if valid
-     * @throws InvalidObjectException     on invalid/no format, or no archive entries
-     * @throws IOException                on the output being a directory and not a file
-     * @throws FileAlreadyExistsException on the output already existing
-     */
-    public boolean validate() throws IOException
-    {
-        // Did they supply us with a format?
-        if (format == null)
-            throw new InvalidObjectException("Invalid format!");
-
-        // Are there archive entries?
-        if (entries.isEmpty())
-            throw new InvalidObjectException("There are no file entries to be compressed!");
-
-        // Is the output valid?
-        if (output == null)
-            throw new InvalidObjectException("Invalid output!");
-        if (output.isDirectory())
-            throw new IOException("'" + output.getPath() + "' is not an output file!");
-        if (output.exists())
-            throw new FileAlreadyExistsException(output.getPath());
-
-        return true;
     }
 }

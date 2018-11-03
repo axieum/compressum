@@ -18,17 +18,23 @@ comp.addEntry(new File("README.md"));
 comp.addEntry(new File("New Text Document.txt"), "LICENSE.txt");
 comp.addEntry(new File("Folder/SubFolder"), "Folder");
 
+comp.compress().thenAccept((archiveFile) -> {
+    // The compression was successful, do stuff
+    System.out.println('\'' + archiveFile.getName() + "' compressed!");
+}).exceptionally((e) -> {
+    // The compression failed, do stuff
+    e.printStackTrace();
+    System.out.println("Compression failed.");
+    return null; // Must return a default value
+});
+```
+
+By calling `#get()` on the `CompletableFuture<File>` instance, you can block your code to wait for the archive (think synchronously).
+
+```java
 try {
-    comp.compress().thenAccept((archiveFile) -> {
-        // The compression was successful, do stuff
-        System.out.println('\'' + archiveFile.getName() + "' compressed!");
-    }).exceptionally((e) -> {
-        // The compression failed, do stuff
-        e.printStackTrace();
-        System.out.println("Compression failed.");
-        return null; // Must return a default value
-    });
-} catch (IOException e) {
+    File archive = comp.compress().get();
+} catch (Exception e) {
     e.printStackTrace();
 }
 ```
