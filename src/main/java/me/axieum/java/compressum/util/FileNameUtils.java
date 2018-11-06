@@ -16,7 +16,7 @@ public class FileNameUtils
     {
         try
         {
-            return file.getCanonicalPath().substring(source.getAbsolutePath().length() + 1);
+            return file.getCanonicalPath().substring(source.getCanonicalPath().length() + 1);
         } catch (IOException e)
         {
             e.printStackTrace();
