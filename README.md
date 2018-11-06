@@ -5,6 +5,16 @@
 
 The source and binaries are available for download on the [releases page](https://github.com/Axieum/Compressum/releases).
 
+Alternatively, you can pull from Maven Central repositories:
+
+```xml
+<dependency>
+  <groupId>me.axiuem.java.compressum</groupId>
+  <artifactId>Compressum</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
 ### Examples
 
 Calling `#compress()` may throw an exception if the instance has no entries, output already exists etc.
