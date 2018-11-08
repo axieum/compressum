@@ -11,7 +11,7 @@ Alternatively, you can pull from Maven Central repositories:
 <dependency>
   <groupId>me.axiuem.java.compressum</groupId>
   <artifactId>Compressum</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
