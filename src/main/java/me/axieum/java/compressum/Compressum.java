@@ -67,7 +67,8 @@ public class Compressum
                 throw new CompletionException(new FileAlreadyExistsException(output.getPath()));
 
             // Prepare the directory for the archive.
-            getOutput().getParentFile().mkdirs();
+            if (output.getParent() != null)
+                output.getParentFile().mkdirs();
 
             // Archive it!
             File archive = format.getHandler().serialize(this);
