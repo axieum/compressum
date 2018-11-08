@@ -21,7 +21,7 @@ public class TarHandler implements IArchiveHandler
         {
             OutputStream stream = new FileOutputStream(compressum.getOutput());
 
-            // Gzip?
+            // Apply compression?
             if (compressum.getFormat() == Format.TAR_GZ)
                 stream = new GzipCompressorOutputStream(stream);
             else if (compressum.getFormat() == Format.TAR_XZ)
@@ -49,8 +49,7 @@ public class TarHandler implements IArchiveHandler
                 archive.closeArchiveEntry();
             }
 
-            archive.finish();
-            stream.close();
+            archive.close();
 
             return compressum.getOutput().getCanonicalFile();
         } catch (Exception e)

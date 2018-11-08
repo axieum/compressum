@@ -26,7 +26,7 @@ public class SevenZipHandler implements IArchiveHandler
 
                 InputStream stream = new FileInputStream(fileEntry.getKey());
                 final byte[] buffer = new byte[4096];
-                int n = 0;
+                int n;
                 while (-1 != (n = stream.read(buffer)))
                     archive.write(buffer, 0, n);
                 stream.close();
@@ -34,7 +34,7 @@ public class SevenZipHandler implements IArchiveHandler
                 archive.closeArchiveEntry();
             }
 
-            archive.finish();
+            archive.close();
 
             return compressum.getOutput().getCanonicalFile();
         } catch (Exception e)

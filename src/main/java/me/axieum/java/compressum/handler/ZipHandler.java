@@ -34,8 +34,7 @@ public class ZipHandler implements IArchiveHandler
                 archive.closeArchiveEntry();
             }
 
-            archive.finish();
-            stream.close();
+            archive.close();
 
             return compressum.getOutput().getCanonicalFile();
         } catch (Exception e)
