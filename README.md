@@ -17,7 +17,8 @@ Alternatively, you can pull from Maven Central repositories:
 
 ### Examples
 
-Calling `#compress()` may throw an exception if the instance has no entries, output already exists etc.
+Calling `#compress()` expects an outfile file and an archive format to be set - prematurely invoking will cause an exception to be thrown in the future.
+
 For the convenience of the consumer, archiving can be quite a time consuming task and thus in order not "block" your code a `CompletableFuture<File>` instance is immediately returned (learn more at [Java Docs](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)). Here, you can add callbacks for when the archive is ready, handle exceptions, etc.
 
 ```java
