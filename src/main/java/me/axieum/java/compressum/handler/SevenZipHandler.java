@@ -18,6 +18,7 @@ public class SevenZipHandler implements IArchiveHandler
         {
             SevenZOutputFile archive = new SevenZOutputFile(compressum.getOutput());
 
+            compressum.processed = 0;
             for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
             {
                 SevenZArchiveEntry entry = archive.createArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
@@ -32,6 +33,7 @@ public class SevenZipHandler implements IArchiveHandler
                 stream.close();
 
                 archive.closeArchiveEntry();
+                compressum.processed++;
             }
 
             archive.close();

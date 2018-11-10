@@ -20,6 +20,7 @@ public class ZipHandler implements IArchiveHandler
             ArchiveOutputStream archive = new ArchiveStreamFactory().createArchiveOutputStream(ArchiveStreamFactory.ZIP,
                                                                                                stream);
 
+            compressum.processed = 0;
             for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
             {
                 ZipArchiveEntry entry = new ZipArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
@@ -32,6 +33,7 @@ public class ZipHandler implements IArchiveHandler
                 input.close();
 
                 archive.closeArchiveEntry();
+                compressum.processed++;
             }
 
             archive.close();

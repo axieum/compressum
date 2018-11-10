@@ -1,5 +1,6 @@
 package me.axieum.java.compressum;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -7,11 +8,34 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.nio.file.FileAlreadyExistsException;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CompressumTests
 {
+    @Test
+    @DisplayName("Retrieve compression progress")
+    void getCompressionProgress()
+    {
+        final File OUTPUT = new File(Constants.TEMP_DIR, "Progressed.zip");
+        OUTPUT.delete();
+
+        // Prepare the instance.
+        Compressum compressum = new Compressum(OUTPUT, Format.ZIP);
+        compressum.addEntry(Constants.SAMPLE_DATA_DIR);
+
+        // Start compression.
+        CompletableFuture<File> future = compressum.compress();
+
+        // Wait for it to finish or if it throws an exception.
+        future.exceptionally(Assertions::fail);
+        assertDoesNotThrow(() -> future.get());
+
+        // Compression should have finished, hence should be at 100% (1.0).
+        assertEquals(1.0, compressum.getProgress());
+    }
+
     @Test
     @DisplayName("Prepare a blank Compressum instance")
     void prepareBlankInstance()
@@ -55,7 +79,7 @@ class CompressumTests
             return null;
         }).get());
 
-        final File output = new File(Constants.TEMP_DIR, "CompressumTests.zip");
+        final File output = new File(Constants.TEMP_DIR, "BlankInstance.zip");
         output.delete();
         compressum.setOutput(output);
 

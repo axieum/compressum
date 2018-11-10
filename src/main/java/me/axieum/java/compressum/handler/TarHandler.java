@@ -33,6 +33,7 @@ public class TarHandler implements IArchiveHandler
             archive.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR);
             archive.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
 
+            compressum.processed = 0;
             for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
             {
                 TarArchiveEntry entry = new TarArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
@@ -47,6 +48,7 @@ public class TarHandler implements IArchiveHandler
                 input.close();
 
                 archive.closeArchiveEntry();
+                compressum.processed++;
             }
 
             archive.close();

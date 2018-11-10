@@ -16,6 +16,8 @@ public class Compressum
     private HashMap<File, String> entries = new HashMap<>();
     private Format format;
     private File output;
+    private CompletableFuture<File> task;
+    public long processed;
 
     /**
      * Create a new blank instance to be manually prepared.
@@ -55,16 +57,9 @@ public class Compressum
      */
     public CompletableFuture<File> compress()
     {
-        return CompletableFuture.supplyAsync(() -> {
+        task = CompletableFuture.supplyAsync(() -> {
             // Check this instance to make sure we have everything.
-            if (format == null)
-                throw new CompletionException(new InvalidObjectException("Invalid format!"));
-            if (output == null)
-                throw new CompletionException(new InvalidObjectException("Invalid output!"));
-            if (output.isDirectory())
-                throw new CompletionException(new IOException("'" + output.getPath() + "' is not an output file!"));
-            if (output.exists())
-                throw new CompletionException(new FileAlreadyExistsException(output.getPath()));
+            validateForCompression();
 
             // Prepare the directory for the archive.
             if (output.getParent() != null)
@@ -81,16 +76,8 @@ public class Compressum
             // Return the archive.
             return archive;
         });
-    }
 
-    /**
-     * Retrieve all archive file entries.
-     *
-     * @return a map of Files and their pathname in the archive
-     */
-    public HashMap<File, String> getEntries()
-    {
-        return entries;
+        return task; // Remember the task, and return it
     }
 
     /**
@@ -117,6 +104,16 @@ public class Compressum
     }
 
     /**
+     * Retrieve all archive file entries.
+     *
+     * @return a map of Files and their pathname in the archive
+     */
+    public HashMap<File, String> getEntries()
+    {
+        return entries;
+    }
+
+    /**
      * Add a new file/directory entry, at the specified path in the archive.
      *
      * @param file   file/directory to be added
@@ -132,7 +129,7 @@ public class Compressum
             for (File descendant : FileUtils.listFiles(file, null, true))
                 addEntry(descendant, target + File.separator + FileNameUtils.relativise(file, descendant));
         else
-            this.entries.put(file, target);
+            entries.put(file, target);
 
         return this;
     }
@@ -182,5 +179,33 @@ public class Compressum
     public Compressum setOutput(String output)
     {
         return setOutput(new File(output));
+    }
+
+    /**
+     * Get the current progress of the task.
+     *
+     * @return percentage of archive entries processed
+     */
+    public double getProgress()
+    {
+        return entries.size() == 0 ? 0 : processed / (double) entries.size();
+    }
+
+    /**
+     * Validate this Compressum instance to ensure is ready for compression.
+     *
+     * @throws CompletionException if the instance is missing something
+     * @see #compress()
+     */
+    private void validateForCompression() throws CompletionException
+    {
+        if (format == null)
+            throw new CompletionException(new InvalidObjectException("Invalid format!"));
+        if (output == null)
+            throw new CompletionException(new InvalidObjectException("Invalid output!"));
+        if (output.isDirectory())
+            throw new CompletionException(new IOException("'" + output.getPath() + "' is not an output file!"));
+        if (output.exists())
+            throw new CompletionException(new FileAlreadyExistsException(output.getPath()));
     }
 }
