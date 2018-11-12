@@ -1,6 +1,6 @@
 package me.axieum.java.compressum.handler;
 
-import me.axieum.java.compressum.Compressum;
+import me.axieum.java.compressum.CompletableArchive;
 
 import java.io.File;
 
@@ -9,8 +9,8 @@ public interface IArchiveHandler
     /**
      * Serialise the Compressum instance to disk.
      *
-     * @param compressum Compressum instance that contains format, output and archive entries
+     * @param completable Completable Archive instance that handles the underlying future
      * @return output archive file
      */
-    File serialize(Compressum compressum);
+    File serialize(CompletableArchive completable);
 }

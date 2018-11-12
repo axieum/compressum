@@ -8,16 +8,14 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 
 public class Compressum
 {
     private HashMap<File, String> entries = new HashMap<>();
     private Format format;
     private File output;
-    private CompletableFuture<File> task;
-    public long processed;
 
     /**
      * Create a new blank instance to be manually prepared.
@@ -51,13 +49,16 @@ public class Compressum
     }
 
     /**
-     * Invokes the compression and returns a "promise".
+     * Invoke the compression on the specified executor.
      *
-     * @return a "promise" revolving around the archive file instance
+     * @param executor executor for the task to be executed on (allows for thread control)
+     * @return a completable archive instance for handling the underlying future
      */
-    public CompletableFuture<File> compress()
+    public CompletableArchive compress(Executor executor)
     {
-        task = CompletableFuture.supplyAsync(() -> {
+        final CompletableArchive completable = new CompletableArchive(this);
+
+        return completable.supply(() -> {
             // Check this instance to make sure we have everything.
             validateForCompression();
 
@@ -66,18 +67,27 @@ public class Compressum
                 output.getParentFile().mkdirs();
 
             // Archive it!
-            File archive = format.getHandler().serialize(this);
+            File archive = format.getHandler().serialize(completable);
 
-            // If the archive file is null or doesn't exist, throw an exception.
+            // If not cancelled, and the archive file is null or doesn't exist, throw an exception.
             // NB: Throwing an exception allows for catching with #exceptionally()
-            if (archive == null || !archive.exists())
-                throw new CompletionException(new Exception("Compression of '" + getOutput().getPath() + "' failed!"));
+            if (!completable.isCancelled())
+                if (archive == null || !archive.exists())
+                    throw new CompletionException(new Exception("Compression of '" + getOutput().getPath() + "' failed!"));
 
             // Return the archive.
             return archive;
         });
+    }
 
-        return task; // Remember the task, and return it
+    /**
+     * Invokes the compression.
+     *
+     * @return a completable archive instance for handling the underlying future
+     */
+    public CompletableArchive compress()
+    {
+        return compress(null);
     }
 
     /**
@@ -147,6 +157,18 @@ public class Compressum
     }
 
     /**
+     * Append an already established file entry map with the entries.
+     *
+     * @param entries an already established map of files to pathname in the archive
+     * @return this for chaining
+     */
+    public Compressum addEntries(HashMap<File, String> entries)
+    {
+        this.entries.putAll(entries);
+        return this;
+    }
+
+    /**
      * Get an instance of a File for the output archive.
      *
      * @return the output archive file
@@ -179,16 +201,6 @@ public class Compressum
     public Compressum setOutput(String output)
     {
         return setOutput(new File(output));
-    }
-
-    /**
-     * Get the current progress of the task.
-     *
-     * @return percentage of archive entries processed
-     */
-    public double getProgress()
-    {
-        return entries.size() == 0 ? 0 : processed / (double) entries.size();
     }
 
     /**

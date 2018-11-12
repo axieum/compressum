@@ -1,6 +1,6 @@
 package me.axieum.java.compressum.handler;
 
-import me.axieum.java.compressum.Compressum;
+import me.axieum.java.compressum.CompletableArchive;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile;
 
@@ -12,15 +12,17 @@ import java.util.Map;
 public class SevenZipHandler implements IArchiveHandler
 {
     @Override
-    public File serialize(Compressum compressum)
+    public File serialize(CompletableArchive completable)
     {
         try
         {
-            SevenZOutputFile archive = new SevenZOutputFile(compressum.getOutput());
+            SevenZOutputFile archive = new SevenZOutputFile(completable.getOutput());
 
-            compressum.processed = 0;
-            for (Map.Entry<File, String> fileEntry : compressum.getEntries().entrySet())
+            for (Map.Entry<File, String> fileEntry : completable.getEntries().entrySet())
             {
+                if (completable.isCancelled())
+                    break;
+
                 SevenZArchiveEntry entry = archive.createArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
 
                 archive.putArchiveEntry(entry);
@@ -33,12 +35,15 @@ public class SevenZipHandler implements IArchiveHandler
                 stream.close();
 
                 archive.closeArchiveEntry();
-                compressum.processed++;
+
+                completable.processed++;
             }
 
             archive.close();
 
-            return compressum.getOutput().getCanonicalFile();
+            if (!completable.isCancelled())
+                return completable.getOutput().getCanonicalFile();
+            completable.getOutput().delete();
         } catch (Exception e)
         {
             e.printStackTrace();

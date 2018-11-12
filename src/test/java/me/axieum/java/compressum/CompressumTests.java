@@ -8,12 +8,36 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.nio.file.FileAlreadyExistsException;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CompressumTests
 {
+    @Test
+    @DisplayName("Cancel a compression in progress")
+    void cancelCompression()
+    {
+        final File OUTPUT = new File(Constants.TEMP_DIR, "Cancelled.zip");
+        OUTPUT.delete();
+
+        // Prepare the instance.
+        Compressum compressum = new Compressum(OUTPUT, Format.ZIP);
+        compressum.addEntry(Constants.SAMPLE_DATA_DIR);
+
+        // Start compression.
+        CompletableArchive future = compressum.compress().exceptionally(Assertions::fail);
+
+        // Cancel the task.
+        future.cancel();
+
+        // Blocking the code and retrieving the archive should result in a null file.
+        // NB: Assuming it was cancelled before completing.
+        assertDoesNotThrow(() -> assertNull(future.get()));
+
+        // Also, the "incomplete" output file should not exist (have been deleted).
+        assertFalse(OUTPUT.exists());
+    }
+
     @Test
     @DisplayName("Retrieve compression progress")
     void getCompressionProgress()
@@ -26,14 +50,14 @@ class CompressumTests
         compressum.addEntry(Constants.SAMPLE_DATA_DIR);
 
         // Start compression.
-        CompletableFuture<File> future = compressum.compress();
+        CompletableArchive future = compressum.compress();
 
         // Wait for it to finish or if it throws an exception.
         future.exceptionally(Assertions::fail);
-        assertDoesNotThrow(() -> future.get());
+        assertDoesNotThrow(future::get);
 
         // Compression should have finished, hence should be at 100% (1.0).
-        assertEquals(1.0, compressum.getProgress());
+        assertEquals(1.0, future.getProgress());
     }
 
     @Test

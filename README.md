@@ -19,7 +19,7 @@ Alternatively, you can pull from Maven Central repositories:
 
 Calling `#compress()` expects an outfile file and an archive format to be set - prematurely invoking will cause an exception to be thrown in the future.
 
-For the convenience of the consumer, archiving can be quite a time consuming task and thus in order not "block" your code a `CompletableFuture<File>` instance is immediately returned (learn more at [Java Docs](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)). Here, you can add callbacks for when the archive is ready, handle exceptions, etc.
+For the convenience of the consumer, archiving can be quite a time consuming task and thus in order not "block" your code a `CompletableFuture<File>` instance is immediately returned (learn more at [Java Docs](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)) - accessible through `CompletableArchive#getTask()`. Here, you can add callbacks for when the archive is ready, handle exceptions, etc.
 
 ```java
 File output = new File("New Folder/Compressum.zip");
@@ -29,7 +29,7 @@ comp.addEntry(new File("README.md"));
 comp.addEntry(new File("New Text Document.txt"), "LICENSE.txt");
 comp.addEntry(new File("Folder/SubFolder"), "Folder");
 
-comp.compress().thenAccept((archiveFile) -> {
+comp.compress().then((archiveFile) -> {
     // The compression was successful, do stuff
     System.out.println('\'' + archiveFile.getName() + "' compressed!");
 }).exceptionally((e) -> {
@@ -37,10 +37,12 @@ comp.compress().thenAccept((archiveFile) -> {
     e.printStackTrace();
     System.out.println("Compression failed.");
     return null; // Must return a default value
+}).after(() -> {
+    // Do something regardless of success or failure
 });
 ```
 
-By calling `#get()` on the `CompletableFuture<File>` instance, you can block your code to wait for the archive (think synchronously).
+By calling `#get()`, you can block your code to wait for the archive (think synchronously).
 
 ```java
 try {
