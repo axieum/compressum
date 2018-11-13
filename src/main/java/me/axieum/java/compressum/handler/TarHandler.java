@@ -2,6 +2,7 @@ package me.axieum.java.compressum.handler;
 
 import me.axieum.java.compressum.CompletableArchive;
 import me.axieum.java.compressum.Format;
+import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -15,55 +16,49 @@ import java.util.Map;
 public class TarHandler implements IArchiveHandler
 {
     @Override
-    public File serialize(CompletableArchive completable)
+    public File serialize(CompletableArchive completable) throws IOException, ArchiveException
     {
-        try
+        OutputStream stream = new FileOutputStream(completable.getOutput());
+
+        // Apply compression?
+        if (completable.getFormat() == Format.TAR_GZ)
+            stream = new GzipCompressorOutputStream(stream);
+        else if (completable.getFormat() == Format.TAR_XZ)
+            stream = new XZCompressorOutputStream(stream);
+
+        TarArchiveOutputStream archive = (TarArchiveOutputStream) new ArchiveStreamFactory().createArchiveOutputStream(
+                ArchiveStreamFactory.TAR,
+                stream);
+        archive.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR);
+        archive.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+
+        for (Map.Entry<File, String> fileEntry : completable.getEntries().entrySet())
         {
-            OutputStream stream = new FileOutputStream(completable.getOutput());
+            if (completable.isCancelled())
+                break;
 
-            // Apply compression?
-            if (completable.getFormat() == Format.TAR_GZ)
-                stream = new GzipCompressorOutputStream(stream);
-            else if (completable.getFormat() == Format.TAR_XZ)
-                stream = new XZCompressorOutputStream(stream);
+            TarArchiveEntry entry = new TarArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
 
-            TarArchiveOutputStream archive = (TarArchiveOutputStream) new ArchiveStreamFactory().createArchiveOutputStream(
-                    ArchiveStreamFactory.TAR,
-                    stream);
-            archive.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR);
-            archive.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            // Set entry flags
+            entry.setSize(fileEntry.getKey().length());
 
-            for (Map.Entry<File, String> fileEntry : completable.getEntries().entrySet())
-            {
-                if (completable.isCancelled())
-                    break;
+            archive.putArchiveEntry(entry);
 
-                TarArchiveEntry entry = new TarArchiveEntry(fileEntry.getKey(), fileEntry.getValue());
+            BufferedInputStream input = new BufferedInputStream(new FileInputStream(fileEntry.getKey()));
+            IOUtils.copy(input, archive);
+            input.close();
 
-                // Set entry flags
-                entry.setSize(fileEntry.getKey().length());
+            archive.closeArchiveEntry();
 
-                archive.putArchiveEntry(entry);
-
-                BufferedInputStream input = new BufferedInputStream(new FileInputStream(fileEntry.getKey()));
-                IOUtils.copy(input, archive);
-                input.close();
-
-                archive.closeArchiveEntry();
-
-                completable.processed++;
-            }
-
-            archive.close();
-
-            if (!completable.isCancelled())
-                return completable.getOutput().getCanonicalFile();
-            completable.getOutput().delete();
-        } catch (Exception e)
-        {
-            e.printStackTrace();
+            completable.processed++;
         }
 
+        archive.close();
+
+        if (!completable.isCancelled())
+            return completable.getOutput().getCanonicalFile();
+
+        completable.getOutput().delete();
         return null;
     }
 }

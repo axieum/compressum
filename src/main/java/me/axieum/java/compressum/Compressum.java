@@ -67,16 +67,22 @@ public class Compressum
                 output.getParentFile().mkdirs();
 
             // Archive it!
-            File archive = format.getHandler().serialize(completable);
+            try
+            {
+                File archive = format.getHandler().serialize(completable);
 
-            // If not cancelled, and the archive file is null or doesn't exist, throw an exception.
-            // NB: Throwing an exception allows for catching with #exceptionally()
-            if (!completable.isCancelled())
-                if (archive == null || !archive.exists())
-                    throw new CompletionException(new Exception("Compression of '" + getOutput().getPath() + "' failed!"));
+                // If not cancelled, and the archive file is null or doesn't exist, throw an exception.
+                // NB: Throwing an exception allows for catching with #exceptionally()
+                if (!completable.isCancelled())
+                    if (archive == null || !archive.exists())
+                        throw new CompletionException(new Exception("Compression of '" + getOutput().getPath() + "' failed!"));
 
-            // Return the archive.
-            return archive;
+                // Return the archive.
+                return archive;
+            } catch (Exception e)
+            {
+                throw new CompletionException(e.getCause());
+            }
         });
     }
 
