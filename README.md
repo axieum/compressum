@@ -17,9 +17,12 @@ Alternatively, you can pull from Maven Central repositories:
 
 ### Examples
 
-Calling `#compress()` expects an outfile file and an archive format to be set - prematurely invoking will cause an exception to be thrown in the future.
+Calling `Compressum#compress()` expects an output file and an archive format to be set - prematurely invoking will cause an exception to be thrown in the future.
 
-For the convenience of the consumer, archiving can be quite a time consuming task and thus in order not "block" your code a `CompletableFuture<File>` instance is immediately returned (learn more at [Java Docs](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)) - accessible through `CompletableArchive#getTask()`. Here, you can add callbacks for when the archive is ready, handle exceptions, etc.
+For the convenience of the consumer, archiving can be quite a time consuming task and thus in order not "block" your code
+a `CompletableFuture<File>` instance is immediately returned (learn more at [Java Docs](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)) -
+accessible through `CompletableArchive#getTask()`.
+Here, you can add callbacks for when the archive is ready, handle exceptions, etc. - though most future functions are transitively available through `CompletableArchive`.
 
 ```java
 File output = new File("New Folder/Compressum.zip");
@@ -38,11 +41,12 @@ comp.compress().then((archiveFile) -> {
     System.out.println("Compression failed.");
     return null; // Must return a default value
 }).after(() -> {
-    // Do something regardless of success or failure
+    // The compression is finished, do stuff
+    System.out.println("Compression finished!");
 });
 ```
 
-By calling `#get()`, you can block your code to wait for the archive (think synchronously).
+By calling `CompletableArchive#get()`, you can block your code to wait for the archive (think synchronously).
 
 ```java
 try {
@@ -54,7 +58,7 @@ try {
 
 ## Contributing
 
-We accept pull requests here on GitHub! Learn more in our [contribution guidelines](CONTRIBUTING.md).
+Pull requests are encouraged here on GitHub! Learn more in the [contribution guidelines](CONTRIBUTING.md).
 
 ## License
 

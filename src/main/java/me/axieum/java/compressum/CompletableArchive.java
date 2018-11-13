@@ -2,6 +2,7 @@ package me.axieum.java.compressum;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -98,39 +99,81 @@ public class CompletableArchive
         this.cancelled = true;
     }
 
+    /**
+     * Get the archive entries associated with this future.
+     *
+     * @return a map of archive entries (file to pathname in archive)
+     */
     public HashMap<File, String> getEntries()
     {
         return ENTRIES;
     }
 
+    /**
+     * Get the archive format used with this future.
+     *
+     * @return the format of the output archive
+     */
     public Format getFormat()
     {
         return FORMAT;
     }
 
+    /**
+     * Retrieve the destination file.
+     *
+     * @return the output archive file instance
+     */
     public File getOutput()
     {
         return OUTPUT;
     }
 
+    /**
+     * Add a callback for when this future completes successfully.
+     *
+     * @param action task to be executed
+     * @return this for chaining
+     */
     public CompletableArchive then(Consumer<? super File> action)
     {
         task.thenAccept(action);
         return this;
     }
 
-    public CompletableArchive after(Runnable action)
+    /**
+     * Add a new task to be executed after this future completes (regardless of success).
+     *
+     * @param action task to be executed
+     * @return the new Future task
+     */
+    public CompletableFuture<Void> after(Runnable action)
     {
-        task.thenRun(action);
-        return this;
+        return task.thenRun(action);
     }
 
+    /**
+     * Specify a callback for when this future completes with exceptions.
+     *
+     * @param fn function to be used to determine fallback value if this future completes with exceptions
+     * @return this for chaining
+     */
     public CompletableArchive exceptionally(Function<Throwable, ? extends File> fn)
     {
         task = task.exceptionally(fn);
         return this;
     }
 
+    /**
+     * Wait for, and retrieve the output archive file.
+     *
+     * @return the canonical archive file
+     * @throws CancellationException if this future was cancelled
+     * @throws ExecutionException    if this future completed exceptionally
+     * @throws InterruptedException  if the current thread was interrupted
+     *                               while waiting
+     * @see CompletableFuture#get()
+     */
     public File get() throws InterruptedException, ExecutionException
     {
         return task.get();
